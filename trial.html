@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Search</title>
+    <!-- Include Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        #searchInput {
+            flex: 1;
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #searchButton {
+            padding: 10px 20px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        #searchButton:hover {
+            background-color: #3367D6;
+        }
+        .student-card {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-top: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .student-card h3 {
+            margin-top: 0;
+            color: #202124;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .student-info {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 10px;
+        }
+        .student-info strong {
+            color: #5f6368;
+        }
+        .error {
+            color: #d32f2f;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fde7e9;
+            border-radius: 4px;
+        }
+        .loading {
+            color: #5f6368;
+            font-style: italic;
+            padding: 10px;
+        }
+        .no-results {
+            color: #5f6368;
+            padding: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Search System</h1>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter student name..." autocomplete="off">
+        <button id="searchButton">Search</button>
+    </div>
+    
+    
+    <div id="resultsContainer"></div>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDlA_0ldKjACoIAZAFPVvzkddQNXPvcD5c",
+            authDomain: "student-db-2e20b.firebaseapp.com",
+            projectId: "student-db-2e20b",
+            storageBucket: "student-db-2e20b.firebasestorage.ap",
+            messagingSenderId: "234329895874",
+            appId: "1:234329895874:web:50f7e6c09f2e26a7ed1c5b"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Cloud Firestore
+        const db = firebase.firestore();
+        
+        // Search function
+        document.getElementById('searchButton').addEventListener('click', searchStudents);
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchStudents();
+            }
+        });
+        
+        function searchStudents() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            if (!searchTerm) {
+                resultsContainer.innerHTML = '<div class="error">Please enter a student name to search</div>';
+                return;
+            }
+            
+            resultsContainer.innerHTML = '<div class="loading">Searching for students...</div>';
+            
+            // Search by name (case insensitive)
+            db.collection("Students")
+                .where("Name", ">=", searchTerm)
+                .where("Name", "<=", searchTerm + '\uf8ff')
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        resultsContainer.innerHTML = `
+                            <div class="no-results">
+                                No students found matching "${searchTerm}"
+                            </div>
+                        `;
+                    } else {
+                        resultsContainer.innerHTML = `
+                            <div class="results-count">
+                                Found ${querySnapshot.size} student(s) matching "${searchTerm}"
+                            </div>
+                        `;
+                        querySnapshot.forEach((doc) => {
+                            displayStudent(doc.id, doc.data());
+                        });
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error searching students: ", error);
+                    resultsContainer.innerHTML = `
+                        <div class="error">
+                            Error searching students: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+        
+        function displayStudent(id, studentData) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            const studentCard = document.createElement('div');
+            studentCard.className = 'student-card';
+            
+            studentCard.innerHTML = `
+                <h3>${studentData.Name || 'Name not available'}</h3>
+                <div class="student-info">
+                    <div><strong>Student ID:</strong></div>
+                    <div>${id}</div>
+                    
+                    <div><strong>Branch:</strong></div>
+                    <div>${studentData.Branch || 'N/A'}</div>
+                    
+                    <div><strong>Phone Number:</strong></div>
+                    <div>${studentData.PhoneNo || 'N/A'}</div>
+                    
+                    <div><strong>Roll Number:</strong></div>
+                    <div>${studentData.RollNo || studentData.RoLNto || 'N/A'}</div>
+                </div>
+            `;
+            
+            resultsContainer.appendChild(studentCard);
+        }
+    </script>
+</body>
+</html>
